@@ -5,4 +5,23 @@ services:
       context: ./backend
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     command: sleep infinity
+    volumes:
+      - backend_app:/app 
+
+  db:
+    image: postgres:17
+    ports:
+      - "55432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DB: ${DB_NAME}
+
+volumes:
+  backend_app:
+  postgres_data:

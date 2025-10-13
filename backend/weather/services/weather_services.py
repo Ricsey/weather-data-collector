@@ -28,17 +28,18 @@ class WeatherDataValidationService:
 
     def clean_data(self):
         self.clean_types()
-        self.clean_missing_values()
         self.check_missing_dates()
+        self.check_missing_values()
         self.check_duplicates()
         self.check_ranges()
         self.check_consistency()
+        self.clean_missing_values()
 
     def clean_types(self):
         for col in ["t_max", "t_mean", "t_min"]:
             self.df[col] = pd.to_numeric(self.df[col], errors="coerce")
-        if not pd.api.types.is_datetime64_any_dtype(self.df.index):
-            self.df.index = pd.to_datetime(self.df.index)
+        if not pd.api.types.is_datetime64_any_dtype(self.df["Time"]):
+            self.df["Time"] = pd.to_datetime(self.df["Time"], format="%Y%m%d")
 
     def clean_missing_values(self):
         """Interpolating missing values with linear interpolation"""
@@ -51,6 +52,18 @@ class WeatherDataValidationService:
         missing_dates = full_index.difference(self.df.index)
         if len(missing_dates) > 0:
             print(f"[Warning] Missing dates: {missing_dates}")
+
+    def check_missing_values(self):
+
+        missing = self.df[["t_max", "t_mean", "t_min"]].isna()
+
+        if missing.any().any():
+            for col in ["t_max", "t_mean", "t_min"]:
+                missing_dates = self.df.index[missing[col]].tolist()
+                if missing_dates:
+                    print(
+                        f"[Warning] Missing values in {col} at dates: {missing_dates}"
+                    )
 
     def check_duplicates(self):
         duplicates = self.df.index[self.df.index.duplicated()]

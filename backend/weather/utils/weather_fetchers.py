@@ -30,6 +30,8 @@ class HungarometWeatherFetcher(WeatherFetcher):
         "Budapest": 34429,
     }
 
+    NA = -999
+
     def __init__(self, city):
         self._check_city_availability(city)
         self.city = city
@@ -92,11 +94,16 @@ class HungarometWeatherFetcher(WeatherFetcher):
         return dfs[0].merge(dfs[1], on="Time").merge(dfs[2], on="Time")
 
     def clean_dataframe(
-        self, df: pd.DataFrame, rename_map: dict[str, str]
+        self, df: pd.DataFrame, rename_map: dict[str, str] = None
     ) -> pd.DataFrame:
         """Standardize and clean up a weather DataFrame."""
         df.columns = df.columns.str.strip()
-        df = df.rename(columns=rename_map).drop(columns=["EOR"], errors="ignore")
+
+        if rename_map:
+            df = df.rename(columns=rename_map).drop(columns=["EOR"], errors="ignore")
+
+        df.replace(self.NA, pd.NA, inplace=True)
+
         return df
 
     def collect_recent_data(self):
@@ -112,4 +119,4 @@ class HungarometWeatherFetcher(WeatherFetcher):
         df = df[["Time", "t", "tx", "tn"]]
         df = df.rename(columns={"tx": "t_max", "tn": "t_min", "t": "t_mean"})
 
-        return df
+        return self.clean_dataframe(df)

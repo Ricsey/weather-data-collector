@@ -50,6 +50,7 @@ class HungarometWeatherFetcher(WeatherFetcher):
             .combine_first(df_recent.set_index("Time"))
             .reset_index()
         )
+        df_merged["city"] = self.city
 
         return df_merged
 

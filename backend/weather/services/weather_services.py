@@ -95,3 +95,11 @@ class WeatherDataValidationService:
 
     def get_cleaned_data(self):
         return self.df.copy()
+
+
+class RollingAvgCalculatorService:
+    def __init__(self, df: pd.DataFrame) -> None:
+        self.df = df
+
+    def calculate(self):
+        pass

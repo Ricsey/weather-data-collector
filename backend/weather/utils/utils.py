@@ -11,6 +11,7 @@ def convert_to_records(df: pd.DataFrame) -> list[WeatherRecord]:
                 t_max=float(row["t_max"]),
                 t_mean=float(row["t_mean"]),
                 t_min=float(row["t_min"]),
+                city=str(row["city"]),
             )
         )
     return records

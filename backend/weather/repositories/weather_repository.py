@@ -12,6 +12,7 @@ class WeatherRecord:
     t_max: float
     t_mean: float
     t_min: float
+    city: str
 
 
 class WeatherDataRepository(ABC):
@@ -53,6 +54,7 @@ class DjangoWeatherDataRepository(WeatherDataRepository):
                         t_max=record.t_max,
                         t_mean=record.t_mean,
                         t_min=record.t_min,
+                        city=record.city,
                     )
                 )
             else:
@@ -60,10 +62,12 @@ class DjangoWeatherDataRepository(WeatherDataRepository):
                     existing.t_max != record.t_max
                     or existing.t_mean != record.t_mean
                     or existing.t_min != record.t_min
+                    or existing.city != record.city
                 ):
                     existing.t_max = record.t_max
                     existing.t_mean = record.t_mean
                     existing.t_min = record.t_min
+                    existing.city = record.city
                     to_update.append(existing)
 
         if to_create:

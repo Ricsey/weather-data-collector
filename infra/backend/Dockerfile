@@ -9,10 +9,12 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --locked --no-install-project --no-editable
 
-ADD . /app
+COPY pyproject.toml uv.lock ./
 
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-editable
+uv sync --locked --no-editable
+
+ADD . /app
 
 FROM python:3.12-slim
 
@@ -20,3 +22,5 @@ COPY --from=builder --chown=app:app /app/.venv /app/.venv
 COPY --from=builder --chown=app:app /app /app
 WORKDIR /app
 ENV PATH="/app/.venv/bin:$PATH"
+
+CMD [ "python", "manage.py", "migrate" ]

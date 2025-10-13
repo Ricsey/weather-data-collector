@@ -8,8 +8,6 @@ services:
     env_file:
       - .env
     command: sleep infinity
-    volumes:
-      - backend_app:/app 
 
   db:
     image: postgres:17
@@ -23,5 +21,4 @@ services:
       DB_DB: ${DB_NAME}
 
 volumes:
-  backend_app:
   postgres_data:

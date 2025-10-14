@@ -1,4 +1,5 @@
 from django.shortcuts import render
+import logging
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -12,9 +13,13 @@ from weather.utils.weather_fetchers import HungarometWeatherFetcher
 from weather.utils.utils import convert_to_records
 
 
+logger = logging.getLogger("weather")
+
+
 class WeatherDataAPIView(APIView):
     def post(self, request, *args, **kwargs):
         try:
+            logger.debug(f"POST request to {self.__class__.__name__} started.")
             repository = DjangoWeatherDataRepository()
             fetcher = HungarometWeatherFetcher(city="Budapest")
             collector_service = WeatherDataCollectorService(fetcher=fetcher)
@@ -30,12 +35,16 @@ class WeatherDataAPIView(APIView):
 
             repository.save_all(records)
 
+            logger.debug(
+                f"POST request to {self.__class__.__name__} finished successfully."
+            )
             return Response(
                 {"status": "success"},
                 status=status.HTTP_200_OK,
             )
 
         except Exception as e:
+            logger.error(f"POST request to {self.__class__.__name__} failed.\n{e}")
             return Response(
                 {"status": "error", "message": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,

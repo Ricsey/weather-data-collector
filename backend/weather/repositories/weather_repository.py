@@ -2,8 +2,12 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import date
 from django.db import transaction
+import logging
 
 from ..models import WeatherData
+
+
+logger = logging.getLogger("weather")
 
 
 @dataclass
@@ -32,6 +36,7 @@ class DjangoWeatherDataRepository(WeatherDataRepository):
         - Existing records (with changed values) → updated
         - Existing records (identical values) → skipped
         """
+        logger.debug("Saving weather data to db started.")
 
         if not records:
             return
@@ -75,3 +80,5 @@ class DjangoWeatherDataRepository(WeatherDataRepository):
 
         if to_update:
             WeatherData.objects.bulk_update(to_update, ["t_max", "t_mean", "t_min"])
+
+        logger.debug("Saving weather data to db finished successfully.")

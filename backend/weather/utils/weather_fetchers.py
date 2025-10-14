@@ -13,7 +13,7 @@ logger = logging.getLogger("weather")
 
 class WeatherFetcher(ABC):
     @abstractmethod
-    def fetch(self, lat: float, lon: float, date: str) -> pd.DataFrame:
+    def fetch(self) -> pd.DataFrame:
         pass
 
 

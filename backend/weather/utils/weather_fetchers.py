@@ -60,12 +60,12 @@ class HungarometWeatherFetcher(WeatherFetcher):
         return df_merged
 
     def _check_city_availability(self, city: str) -> None:
-        logger.debug(f"Checking {self.city} city availability")
+        logger.debug(f"Checking {city} city availability")
         if city not in self.CITY_STATION_NUMBERS:
             error_msg = f"City '{city}' is not available. Choose from {list(self.CITY_STATION_NUMBERS.keys())}."
             logger.error(error_msg)
             raise ValueError(error_msg)
-        logger.debug(f"City {self.city} is available.")
+        logger.debug(f"City {city} is available.")
 
     def _download_csv(self, url: str) -> io.BytesIO:
         logger.debug("Downloading csv file...")

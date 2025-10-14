@@ -1,11 +1,14 @@
 from abc import ABC, abstractmethod
 import io
 import logging
+import logging
 from typing import Any
 import unicodedata
 import zipfile
 import requests
 import pandas as pd
+
+from weather.utils.utils import log_action, log_debug_action
 
 
 logger = logging.getLogger("weather")
@@ -40,6 +43,7 @@ class HungarometWeatherFetcher(WeatherFetcher):
         self._check_city_availability(city)
         self.city = city
 
+    @log_action(action="Fetching weather data", logger=logger)
     def fetch(self) -> pd.DataFrame:
         """
         Collect maximum, mean, and minimum daily temperatures for a city
@@ -77,6 +81,7 @@ class HungarometWeatherFetcher(WeatherFetcher):
                 return io.BytesIO(f.read())
         logger.debug("CSV file downloaded.")
 
+    @log_debug_action(action="Removing accents", logger=logger)
     def _remove_accents(self, text: str) -> str:
         logger.debug("Removing accents...")
         normalized = unicodedata.normalize("NFD", text)
@@ -86,6 +91,7 @@ class HungarometWeatherFetcher(WeatherFetcher):
         logger.debug("Removing accents finished.")
         return ret_value
 
+    @log_action(action="Collecting historical data", logger=logger)
     def collect_historical_data(self):
         """Collect temperature data between 1901-2023."""
 
@@ -109,12 +115,12 @@ class HungarometWeatherFetcher(WeatherFetcher):
         logger.info("Collecting historical data finished successfully.")
         return ret_df
 
+    @log_action(action="Cleaning dataframe", logger=logger)
     def clean_dataframe(
         self, df: pd.DataFrame, rename_map: dict[str, str] = None
     ) -> pd.DataFrame:
         """Standardize and clean up a weather DataFrame."""
 
-        logger.info("Cleaning dataframe started.")
         df.columns = df.columns.str.strip()
 
         if rename_map:
@@ -125,6 +131,7 @@ class HungarometWeatherFetcher(WeatherFetcher):
         logger.info("Cleaning dataframe finished successfully.")
         return df
 
+    @log_action(action="Collecting recent data", logger=logger)
     def collect_recent_data(self):
         logger.info("Collecting recent data started.")
         station_number = self.CITY_STATION_NUMBERS[self.city]

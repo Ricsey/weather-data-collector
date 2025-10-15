@@ -3,6 +3,7 @@ import logging
 from typing import Optional
 import pandas as pd
 from weather.repositories.weather_repository import (
+    WeatherDataFields,
     WeatherDataRepository,
     WeatherRecord,
 )

@@ -4,8 +4,10 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from weather.serializers import RollingAverageRequestSerializer
 from weather.repositories.weather_repository import DjangoWeatherDataRepository
 from weather.services.weather_services import (
+    RollingAverageService,
     WeatherDataCollectorService,
     WeatherDataValidationService,
 )

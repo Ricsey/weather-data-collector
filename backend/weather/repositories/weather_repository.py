@@ -3,8 +3,12 @@ from dataclasses import dataclass
 from datetime import date
 from enum import Enum
 from django.db import transaction
+import logging
 
 from ..models import WeatherData
+
+
+logger = logging.getLogger("weather")
 
 
 class WeatherDataFields(Enum):
@@ -117,6 +121,7 @@ class DjangoWeatherDataRepository(WeatherDataRepository):
         - Existing records (with changed values) → updated
         - Existing records (identical values) → skipped
         """
+        logger.debug("Saving weather data to db started.")
 
         if not records:
             return
@@ -139,6 +144,7 @@ class DjangoWeatherDataRepository(WeatherDataRepository):
                         t_max=record.t_max,
                         t_mean=record.t_mean,
                         t_min=record.t_min,
+                        city=record.city,
                     )
                 )
             else:
@@ -146,10 +152,12 @@ class DjangoWeatherDataRepository(WeatherDataRepository):
                     existing.t_max != record.t_max
                     or existing.t_mean != record.t_mean
                     or existing.t_min != record.t_min
+                    or existing.city != record.city
                 ):
                     existing.t_max = record.t_max
                     existing.t_mean = record.t_mean
                     existing.t_min = record.t_min
+                    existing.city = record.city
                     to_update.append(existing)
 
         if to_create:

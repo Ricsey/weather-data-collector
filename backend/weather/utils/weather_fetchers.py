@@ -16,7 +16,7 @@ logger = logging.getLogger("weather")
 
 class WeatherFetcher(ABC):
     @abstractmethod
-    def fetch(self, lat: float, lon: float, date: str) -> pd.DataFrame:
+    def fetch(self) -> pd.DataFrame:
         pass
 
 
@@ -43,12 +43,13 @@ class HungarometWeatherFetcher(WeatherFetcher):
         self._check_city_availability(city)
         self.city = city
 
+    @log_action(action="Fetching weather data", logger=logger)
     def fetch(self) -> pd.DataFrame:
         """
         Collect maximum, mean, and minimum daily temperatures for a city
         by combining long-term (1901-2023) and recent (2014-2024) datasets.
         """
-
+        logger.info("Fetching weather data started.")
         df_older = self.collect_historical_data()
         df_recent = self.collect_recent_data()
 
@@ -57,32 +58,44 @@ class HungarometWeatherFetcher(WeatherFetcher):
             .combine_first(df_recent.set_index("Time"))
             .reset_index()
         )
+        df_merged["city"] = self.city
 
+        logger.info("Fetching weather data finished successfully.")
         return df_merged
 
     def _check_city_availability(self, city: str) -> None:
+        logger.debug(f"Checking {city} city availability")
         if city not in self.CITY_STATION_NUMBERS:
-            raise ValueError(
-                f"City '{city}' is not available. Choose from {list(self.CITY_STATION_NUMBERS.keys())}."
-            )
+            error_msg = f"City '{city}' is not available. Choose from {list(self.CITY_STATION_NUMBERS.keys())}."
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+        logger.debug(f"City {city} is available.")
 
     def _download_csv(self, url: str) -> io.BytesIO:
+        logger.debug("Downloading csv file...")
         response = requests.get(url)
         response.raise_for_status()
         with zipfile.ZipFile(io.BytesIO(response.content)) as zfile:
             csv_filename = zfile.namelist()[0]
             with zfile.open(csv_filename) as f:
                 return io.BytesIO(f.read())
+        logger.debug("CSV file downloaded.")
 
+    @log_debug_action(action="Removing accents", logger=logger)
     def _remove_accents(self, text: str) -> str:
+        logger.debug("Removing accents...")
         normalized = unicodedata.normalize("NFD", text)
-        return "".join(
+        ret_value = "".join(
             c for c in normalized if unicodedata.category(c) != "Mn"
         )  # 'Mn' = non-spacing marks
+        logger.debug("Removing accents finished.")
+        return ret_value
 
+    @log_action(action="Collecting historical data", logger=logger)
     def collect_historical_data(self):
         """Collect temperature data between 1901-2023."""
 
+        logger.info("Collecting historical data.")
         city_normalized = self._remove_accents(self.city)
 
         datasets = {
@@ -98,12 +111,16 @@ class HungarometWeatherFetcher(WeatherFetcher):
             df = pd.read_csv(csv_file, sep=";")
             dfs.append(self.clean_dataframe(df, rename_map))
 
-        return dfs[0].merge(dfs[1], on="Time").merge(dfs[2], on="Time")
+        ret_df = dfs[0].merge(dfs[1], on="Time").merge(dfs[2], on="Time")
+        logger.info("Collecting historical data finished successfully.")
+        return ret_df
 
+    @log_action(action="Cleaning dataframe", logger=logger)
     def clean_dataframe(
         self, df: pd.DataFrame, rename_map: dict[str, str] = None
     ) -> pd.DataFrame:
         """Standardize and clean up a weather DataFrame."""
+
         df.columns = df.columns.str.strip()
 
         if rename_map:
@@ -111,9 +128,12 @@ class HungarometWeatherFetcher(WeatherFetcher):
 
         df.replace(self.NA, pd.NA, inplace=True)
 
+        logger.info("Cleaning dataframe finished successfully.")
         return df
 
+    @log_action(action="Collecting recent data", logger=logger)
     def collect_recent_data(self):
+        logger.info("Collecting recent data started.")
         station_number = self.CITY_STATION_NUMBERS[self.city]
         url = self.BASE_URL_20141002_20241231 + self.FILENAME_20141002_20241231.format(
             station_number=station_number
@@ -126,4 +146,5 @@ class HungarometWeatherFetcher(WeatherFetcher):
         df = df[["Time", "t", "tx", "tn"]]
         df = df.rename(columns={"tx": "t_max", "tn": "t_min", "t": "t_mean"})
 
+        logger.info("Collecting recent data finished successfully.")
         return self.clean_dataframe(df)

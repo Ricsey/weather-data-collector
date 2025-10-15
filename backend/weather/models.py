@@ -6,6 +6,7 @@ class WeatherData(models.Model):
     t_max = models.FloatField()
     t_mean = models.FloatField()
     t_min = models.FloatField()
+    city = models.CharField(max_length=100)
     created_at = models.DateTimeField(auto_now=True)
     updated_at = models.DateTimeField(null=True, blank=True)
 

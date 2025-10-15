@@ -1,3 +1,6 @@
+from datetime import date
+import logging
+from typing import Optional
 import pandas as pd
 from weather.repositories.weather_repository import (
     WeatherDataRepository,
@@ -97,9 +100,44 @@ class WeatherDataValidationService:
         return self.df.copy()
 
 
-class RollingAvgCalculatorService:
-    def __init__(self, df: pd.DataFrame) -> None:
-        self.df = df
+class RollingAverageService:
+    def __init__(self, repository: WeatherDataRepository):
+        self.repository = repository
 
-    def calculate(self):
-        pass
+    @log_action(action="Calculating rolling averages", logger=logger)
+    def calculate(
+        self,
+        city: str,
+        window: int = 7,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+    ):
+        records = self.repository.get(
+            city=city, start_date=start_date, end_date=end_date
+        )
+
+        if not records:
+            return []
+
+        result_df = pd.DataFrame()
+
+        df = pd.DataFrame([r.to_dict() for r in records])
+        df = df.sort_values("time").set_index("time")
+
+        result_df["t_max_avg"] = (
+            df[WeatherDataFields.T_MAX.value]
+            .rolling(window=window, min_periods=1)
+            .mean()
+        )
+        result_df["t_mean_avg"] = (
+            df[WeatherDataFields.T_MEAN.value]
+            .rolling(window=window, min_periods=1)
+            .mean()
+        )
+        result_df["t_min_avg"] = (
+            df[WeatherDataFields.T_MIN.value]
+            .rolling(window=window, min_periods=1)
+            .mean()
+        )
+
+        return result_df.reset_index().to_dict(orient="records")

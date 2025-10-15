@@ -114,8 +114,7 @@ class WeatherDataValidationService:
         ]
         if not inconsistent.empty:
             logger.warning(
-                f"Inconsistent temperature values at dates: {inconsistent.index.tolist()}",
-                f"{inconsistent}",
+                f"Inconsistent temperature values at dates: {inconsistent.index.tolist()}\n{inconsistent}"
             )
         logger.info("Checking consistency finished successfully.")
 

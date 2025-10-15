@@ -97,7 +97,7 @@ class RollingAverageAPIView(APIView):
             logger.error(f"Error in RollingAverageAPIView: {e}", exc_info=True)
             return Response(
                 {"status": "error", "message": str(e)},
-                status=status.HTTP_400_BAD_REQUEST,
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
         return Response(data, status=status.HTTP_200_OK)

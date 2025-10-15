@@ -43,6 +43,8 @@ rolling average calculations, and is containerized.
 #### Further improvements
 
 -   Protecting endpoints only for authenticated users.
+-   Deploying the application with Gunicorn in a production environment
+-   Creating auto tests
 ------------------------------------------------------------------------
 
 ## Getting Started

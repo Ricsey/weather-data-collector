@@ -1,10 +1,17 @@
 from abc import ABC, abstractmethod
 import io
+import logging
 from typing import Any
 import unicodedata
 import zipfile
 import requests
 import pandas as pd
+
+from weather.repositories.weather_repository import WeatherDataFields
+from weather.utils.utils import log_action, log_debug_action
+
+
+logger = logging.getLogger("weather")
 
 
 class WeatherFetcher(ABC):

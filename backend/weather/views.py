@@ -19,23 +19,42 @@ logger = logging.getLogger("weather")
 
 
 class WeatherDataAPIView(APIView):
-    def post(self, request, *args, **kwargs):
+    def post(self, request):
+        """
+        Handles POST requests to fetch and store weather data for Budapest if not already present.
+
+        Request: None required.
+        Response:
+            {
+                "status": "success"
+            }
+            or
+            {
+                "status": "error",
+                "message": "Error message"
+            }
+        """
         try:
             logger.debug(f"POST request to {self.__class__.__name__} started.")
             repository = DjangoWeatherDataRepository()
             fetcher = HungarometWeatherFetcher(city="Budapest")
             collector_service = WeatherDataCollectorService(fetcher=fetcher)
 
-            collector_service.collect_historical_data()
-            data = collector_service.get_data()
+            if not repository.exists_for_city("Budapest"):
+                collector_service.collect_historical_data()
+                data = collector_service.get_data()
 
-            validator_service = WeatherDataValidationService(dataframe=data)
-            validator_service.clean_data()
-            clean_data = validator_service.get_cleaned_data()
+                validator_service = WeatherDataValidationService(dataframe=data)
+                validator_service.clean_data()
+                clean_data = validator_service.get_cleaned_data()
 
-            records = convert_to_records(clean_data)
+                records = convert_to_records(clean_data)
 
-            repository.save_all(records)
+                repository.save_all(records)
+            else:
+                logger.debug(
+                    "Data for Budapest already exists in the database. Skipping fetch."
+                )
 
             logger.debug(
                 f"POST request to {self.__class__.__name__} finished successfully."

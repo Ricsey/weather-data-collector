@@ -60,6 +60,21 @@ class WeatherDataRepository(ABC):
 
 
 class DjangoWeatherDataRepository(WeatherDataRepository):
+    def count(
+        self,
+        city: str | None = None,
+        start_date: date | None = None,
+        end_date: date | None = None,
+    ) -> int:
+        qs = WeatherData.objects.all()
+        if city is not None:
+            qs = qs.filter(city=city)
+        if start_date is not None:
+            qs = qs.filter(time__gte=start_date)
+        if end_date is not None:
+            qs = qs.filter(time__lte=end_date)
+        return qs.count()
+
     def get_all(self) -> list[WeatherRecord]:
         qs = WeatherData.objects.all()
         return [
@@ -79,6 +94,7 @@ class DjangoWeatherDataRepository(WeatherDataRepository):
         start_date: date | None = None,
         end_date: date | None = None,
         limit: int | None = None,
+        offset: int | None = None,
     ) -> list[WeatherRecord]:
         qs = WeatherData.objects.all()
 
@@ -88,6 +104,9 @@ class DjangoWeatherDataRepository(WeatherDataRepository):
             qs = qs.filter(time__gte=start_date)
         if end_date is not None:
             qs = qs.filter(time__lte=end_date)
+        qs = qs.order_by("date")
+        if offset is not None:
+            qs = qs[offset:]
         if limit is not None:
             qs = qs[:limit]
 

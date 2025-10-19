@@ -73,12 +73,16 @@ class HungarometWeatherFetcher(WeatherFetcher):
 
     @log_debug_action(action="Downloading csv file", logger=logger)
     def _download_csv(self, url: str) -> io.BytesIO:
-        response = requests.get(url)
-        response.raise_for_status()
-        with zipfile.ZipFile(io.BytesIO(response.content)) as zfile:
-            csv_filename = zfile.namelist()[0]
-            with zfile.open(csv_filename) as f:
-                return io.BytesIO(f.read())
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            with zipfile.ZipFile(io.BytesIO(response.content)) as zfile:
+                csv_filename = zfile.namelist()[0]
+                with zfile.open(csv_filename) as f:
+                    return io.BytesIO(f.read())
+        except requests.RequestException as e:
+            logger.error(f"Failed to download CSV from {url}: {e}")
+            raise ValueError(f"Unable to fetch weather data: {e}") from e
 
     @log_debug_action(action="Removing accents", logger=logger)
     def _remove_accents(self, text: str) -> str:

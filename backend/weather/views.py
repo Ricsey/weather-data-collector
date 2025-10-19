@@ -45,9 +45,6 @@ class WeatherDataCollectAPIView(APIView):
                 "message": "Weather data synced successfully for Budapest",
                 "data": {
                     "city": "Budapest",
-                    "records_created": 150,
-                    "records_updated": 50,
-                    "records_skipped": 200
                 }
             }
         """

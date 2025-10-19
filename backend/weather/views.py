@@ -1,10 +1,18 @@
 from django.shortcuts import render
+from django_filters.rest_framework import DjangoFilterBackend
 import logging
-from rest_framework import status
+from rest_framework import status, filters
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.viewsets import ReadOnlyViewSet
 
-from weather.serializers import RollingAverageRequestSerializer
+from weather.models import WeatherData
+from weather.serializers import (
+    RollingAverageRequestSerializer,
+    WeatherDataSerializer,
+    WeatherSyncRequestSerializer,
+)
 from weather.repositories.weather_repository import DjangoWeatherDataRepository
 from weather.services.weather_services import (
     RollingAverageService,
@@ -18,29 +26,53 @@ from weather.utils.utils import convert_to_records
 logger = logging.getLogger("weather")
 
 
-class WeatherDataAPIView(APIView):
+class WeatherDataCollectAPIView(APIView):
     def post(self, request):
         """
-        Handles POST requests to fetch and store weather data for Budapest if not already present.
+        Fetch and store weather data for a city.
 
-        Request: None required.
+        POST /api/v1/weather/sync/
+
+        Request Body:
+            {
+                "city": "Budapest",
+                force: false
+            }
+
         Response:
             {
-                "status": "success"
-            }
-            or
-            {
-                "status": "error",
-                "message": "Error message"
+                "status": "success",
+                "message": "Weather data synced successfully for Budapest",
+                "data": {
+                    "city": "Budapest",
+                    "records_created": 150,
+                    "records_updated": 50,
+                    "records_skipped": 200
+                }
             }
         """
+
+        serializer = WeatherSyncRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "status": "error",
+                    "message": "Invalid request data",
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        city = serializer.validated_data["city"]
+        force = serializer.validated_data.get("force", False)
+
         try:
             logger.debug(f"POST request to {self.__class__.__name__} started.")
             repository = DjangoWeatherDataRepository()
-            fetcher = HungarometWeatherFetcher(city="Budapest")
+            fetcher = HungarometWeatherFetcher(city=city)
             collector_service = WeatherDataCollectorService(fetcher=fetcher)
 
-            if not repository.exists_for_city("Budapest"):
+            if force or not repository.exists_for_city("Budapest"):
                 collector_service.collect_historical_data()
                 data = collector_service.get_data()
 
@@ -52,8 +84,16 @@ class WeatherDataAPIView(APIView):
 
                 repository.save_all(records)
             else:
-                logger.debug(
+                logger.info(
                     "Data for Budapest already exists in the database. Skipping fetch."
+                )
+                return Response(
+                    {
+                        "status": "success",
+                        "message": f"Data for {city} already exists. Use force=true to re-sync.",
+                        "data": {"city": city, "skipped": True},
+                    },
+                    status=status.HTTP_200_OK,
                 )
 
             logger.debug(
@@ -63,11 +103,20 @@ class WeatherDataAPIView(APIView):
                 {"status": "success"},
                 status=status.HTTP_200_OK,
             )
-
+        except ValueError as e:
+            logger.error(f"Validation error during sync for {city}: {e}")
+            return Response(
+                {"status": "error", "message": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         except Exception as e:
             logger.error(f"POST request to {self.__class__.__name__} failed.\n{e}")
             return Response(
-                {"status": "error", "message": str(e)},
+                {
+                    "status": "error",
+                    "message": "An unexpected error occurred during sync",
+                    "detail": str(e),
+                },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 

@@ -1,8 +1,12 @@
 from django.urls import path
-from .views import RollingAverageAPIView, WeatherDataAPIView
+from .views import RollingAverageAPIView, WeatherDataCollectAPIView
 
 urlpatterns = [
-    path("weather/collect-data/", WeatherDataAPIView.as_view(), name="weather_data"),
+    path(
+        "weather/collect-data/",
+        WeatherDataCollectAPIView.as_view(),
+        name="weather_data",
+    ),
     path(
         "weather/rolling-average/",
         RollingAverageAPIView.as_view(),

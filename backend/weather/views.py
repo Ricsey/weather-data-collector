@@ -119,50 +119,68 @@ class WeatherDataCollectAPIView(APIView):
 
 
 class RollingAverageAPIView(APIView):
-    def post(self, request):
+    def get(self, request):
         """
         Calculates the rolling average for weather data.
 
-        Request body:
-            {
-                "city": "CityName",
-                "window": integer,
-                "start_date": "YYYY-MM-DD",  # optional
-                "end_date": "YYYY-MM-DD"     # optional
-            }
+        GET /api/v1/weather/stats/?city=Budapest&window=7&start_date=2024-01-01&end_date=2024-12-31
 
-        Response:
-            [
-                {
-                    "date": "YYYY-MM-DD",
-                    "t_max_avg": float,
-                    "t_mean_avg": float,
-                    "t_min_avg": float
-                },
-                ...
-            ]
+        Query Parameters:
+            - city: str (required) - City name
+            - window: int (default: 7) - Number of days for rolling average
+            - start_date: YYYY-MM-DD (optional) - Start date
+            - end_date: YYYY-MM-DD (optional) - End date
         """
+        serializer = RollingAverageRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "status": "error",
+                    "message": "Invalid request data",
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        validated_data = serializer.validated_data
+        city = validated_data["city"]
+        window = validated_data["window"]
+        start_date = validated_data.get("start_date")
+        end_date = validated_data.get("end_date")
+
         try:
-            serializer = RollingAverageRequestSerializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-
-            validated_data = serializer.validated_data
-            city = validated_data["city"]
-            window = validated_data["window"]
-            start_date = validated_data.get("start_date")
-            end_date = validated_data.get("end_date")
-
             repository = DjangoWeatherDataRepository()
-            service = RollingAverageService(repository)
+            if not repository.exists_for_city(city):
+                return Response(
+                    {
+                        "status": "error",
+                        "message": f"No weather data found for {city}. Please sync data first.",
+                    },
+                    status=status.HTTP_404_NOT_FOUND,
+                )
 
+            service = RollingAverageService(repository)
             data = service.calculate(
-                city=city, window=window, start_date=start_date, end_date=end_date
+                city=city,
+                window=window,
+                start_date=start_date,
+                end_date=end_date,
             )
         except Exception as e:
             logger.error(f"Error in RollingAverageAPIView: {e}", exc_info=True)
             return Response(
-                {"status": "error", "message": str(e)},
+                {
+                    "status": "error",
+                    "message": "An unexpected error occurred while calculating rolling averages",
+                    "detail": str(e),
+                },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-        return Response(data, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "status": "success",
+                "message": "Rolling averages calculated successfully",
+                "data": data,
+            },
+            status=status.HTTP_200_OK,
+        )

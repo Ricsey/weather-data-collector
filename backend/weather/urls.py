@@ -8,7 +8,7 @@ urlpatterns = [
         name="weather-sync",
     ),
     path(
-        "weather/rolling-average/",
+        "weather/rolling-averages/",
         RollingAverageAPIView.as_view(),
         name="rolling-average",
     ),

@@ -34,15 +34,6 @@ class WeatherRecord:
             "city": self.city,
         }
 
-    def to_dict(self) -> dict:
-        return {
-            "time": self.time,
-            WeatherDataFields.T_MAX.value: self.t_max,
-            WeatherDataFields.T_MEAN.value: self.t_mean,
-            WeatherDataFields.T_MIN.value: self.t_min,
-            "city": self.city,
-        }
-
 
 class WeatherDataRepository(ABC):
     @abstractmethod

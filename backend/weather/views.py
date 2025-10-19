@@ -36,7 +36,7 @@ class WeatherDataCollectAPIView(APIView):
         Request Body:
             {
                 "city": "Budapest",
-                force: false
+                "force": false
             }
 
         Response:

@@ -1,15 +1,13 @@
-from django.shortcuts import render
 from django_filters.rest_framework import DjangoFilterBackend
 import logging
 from rest_framework import status, filters
-from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.viewsets import ReadOnlyViewSet
+from rest_framework import generics
 
+from weather.paginations import WeatherDataPagination
 from weather.models import WeatherData
 from weather.serializers import (
-    RawDataListQuerySerializer,
     RollingAverageRequestSerializer,
     WeatherDataSerializer,
     WeatherSyncRequestSerializer,
@@ -187,70 +185,27 @@ class RollingAverageAPIView(APIView):
         )
 
 
-class RawDataListAPIView(APIView):
-    def get(self, request):
-        """
-        List weather data records with filtering and pagination.
+class WeatherRawDataListView(generics.ListAPIView):
+    """
+    List weather data records with filtering and pagination.
 
-        GET /api/v1/weather/data/?city=Budapest&start_date=2024-01-01&page=1&page_size=100
+    GET /api/v1/weather/data/?city=Budapest&start_date=2024-01-01&page=1&page_size=100
 
-        Query Parameters:
-            - city: str (optional) - City name to filter
-            - start_date: YYYY-MM-DD (optional) - Start date filter
-            - end_date: YYYY-MM-DD (optional) - End date filter
-            - page: int (default: 1) - Page number for pagination
-            - page_size: int (default: 50) - Number of records per page
+    Query Parameters:
+        - city: str (optional) - Filter by city
+        - time__gte: YYYY-MM-DD (optional) - Filter from date (start_date)
+        - time__lte: YYYY-MM-DD (optional) - Filter to date (end_date)
+        - page: int (default: 1) - Page number
+        - page_size: int (default: 100, max: 1000) - Records per page
+    """
 
-        """
-        serializer = RawDataListQuerySerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(
-                {
-                    "status": "error",
-                    "message": "Invalid request data",
-                    "errors": serializer.errors,
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        city = serializer.validated_data.get("city")
-        start_date = serializer.validated_data.get("start_date")
-        end_date = serializer.validated_data.get("end_date")
-
-        repository = DjangoWeatherDataRepository()
-        page = int(request.query_params.get("page", 1))
-        page_size = int(request.query_params.get("page_size", 50))
-        offset = (page - 1) * page_size
-
-        total = repository.count(
-            city=city,
-            start_date=start_date,
-            end_date=end_date,
-        )
-
-        records = repository.get(
-            city=city,
-            start_date=start_date,
-            end_date=end_date,
-            limit=page_size,
-            offset=offset,
-        )
-
-        serializer = WeatherDataSerializer(
-            [type("Obj", (), r.to_dict()) for r in records], many=True
-        )
-
-        return Response(
-            {
-                "status": "success",
-                "message": "Raw weather data fetched successfully",
-                "data": serializer.data,
-                "pagination": {
-                    "page": page,
-                    "page_size": page_size,
-                    "total": total,
-                    "pages": (total + page_size - 1) // page_size,
-                },
-            },
-            status=status.HTTP_200_OK,
-        )
+    queryset = WeatherData.objects.all()
+    serializer_class = WeatherDataSerializer
+    pagination_class = WeatherDataPagination
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = {
+        "city": ["exact"],
+        "time": ["gte", "lte", "exact"],
+    }
+    ordering_fields = ["time"]
+    ordering = ["time"]

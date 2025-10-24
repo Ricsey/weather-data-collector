@@ -193,7 +193,7 @@ class WeatherRawDataListView(generics.ListAPIView):
     """
     List weather data records with filtering and pagination.
 
-    GET /api/v1/weather/data/?city=Budapest&start_date=2024-01-01&page=1&page_size=100
+    GET /api/v1/weather/data/raw/?city=Budapest&start_date=2024-01-01&page=1&page_size=100
 
     Query Parameters:
         - city: str (optional) - Filter by city

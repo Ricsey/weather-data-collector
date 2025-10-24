@@ -104,7 +104,7 @@ class DjangoWeatherDataRepository(WeatherDataRepository):
             qs = qs.filter(time__gte=start_date)
         if end_date is not None:
             qs = qs.filter(time__lte=end_date)
-        qs = qs.order_by("date")
+        qs = qs.order_by("time")
         if offset is not None:
             qs = qs[offset:]
         if limit is not None:

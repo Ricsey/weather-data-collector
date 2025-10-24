@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import generics
 
-from weather.paginations import WeatherDataPagination
+from weather.paginations import RollingAveragePagination, WeatherDataPagination
 from weather.models import WeatherData
 from weather.serializers import (
     RollingAverageRequestSerializer,
@@ -118,11 +118,13 @@ class WeatherDataCollectAPIView(APIView):
 
 
 class RollingAverageAPIView(APIView):
+    pagination_class = RollingAveragePagination
+
     def get(self, request):
         """
         Calculates the rolling average for weather data.
 
-        GET /api/v1/weather/stats/?city=Budapest&window=7&start_date=2024-01-01&end_date=2024-12-31
+        GET /api/v1/weather/data/rolling-averages/?city=Budapest&page=4
 
         Query Parameters:
             - city: str (required) - City name
@@ -130,7 +132,7 @@ class RollingAverageAPIView(APIView):
             - start_date: YYYY-MM-DD (optional) - Start date
             - end_date: YYYY-MM-DD (optional) - End date
         """
-        serializer = RollingAverageRequestSerializer(data=request.data)
+        serializer = RollingAverageRequestSerializer(data=request.query_params)
         if not serializer.is_valid():
             return Response(
                 {
@@ -175,11 +177,13 @@ class RollingAverageAPIView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+        paginator = self.pagination_class()
+        paginated_data = paginator.paginate_queryset(data, request)
         return Response(
             {
                 "status": "success",
                 "message": "Rolling averages calculated successfully",
-                "data": data,
+                "data": paginated_data,
             },
             status=status.HTTP_200_OK,
         )

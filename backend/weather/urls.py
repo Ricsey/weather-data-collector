@@ -12,12 +12,12 @@ urlpatterns = [
         name="weather-sync",
     ),
     path(
-        "weather/rolling-averages/",
+        "weather/data/rolling-averages/",
         RollingAverageAPIView.as_view(),
         name="rolling-average",
     ),
     path(
-        "weather/data/",
+        "weather/data/raw/",
         WeatherRawDataListView.as_view(),
         name="weather-raw-data-list",
     ),
